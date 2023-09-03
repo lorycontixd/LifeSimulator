@@ -13,7 +13,7 @@ public class InfoCanvas : MonoBehaviour
     private void Update()
     {
         currentDayPartText.text = $"Day part: {TimeManager.Instance.CurrentDayPart}";
-        gameTimeText.text = $"Game time: {Time.realtimeSinceStartup}";
+        gameTimeText.text = $"Game time: {TimeManager.Instance.TimeSinceStart}";
         daysPassedText.text = $"{TimeManager.Instance.DaysPassed} days passed";
     }
 }

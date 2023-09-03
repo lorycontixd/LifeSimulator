@@ -35,6 +35,14 @@ namespace Lore.Game.Managers
         }
         #endregion
 
+        #region SoundInterval
+        public enum SoundInterval
+        {
+            FIRST,
+            EVERY
+        }
+        #endregion
+
         #region Notification
         public struct Notification
         {
@@ -67,9 +75,13 @@ namespace Lore.Game.Managers
         [SerializeField] private Sprite infoIcon = null;
         [SerializeField] private Sprite warningIcon = null;
         [SerializeField] private Sprite errorIcon = null;
+        [SerializeField] private SoundInterval soundInterval;
+        [SerializeField] private bool playSoundOnNotification = true;
+        [SerializeField] private AudioClip notificationSound = null;
 
         private Queue<Notification> messages = new Queue<Notification>();
         private bool isRunning = false;
+        private AudioSource audioSource;
 
 
         private void Start()
@@ -77,6 +89,19 @@ namespace Lore.Game.Managers
             notificationManager.gameObject.SetActive(true);
             notificationManager.enabled = true;
             notificationManager.enableTimer = false;
+
+            if (notificationSound != null && playSoundOnNotification)
+            {
+                if (audioSource == null)
+                {
+                    audioSource = gameObject.AddComponent<AudioSource>();
+                }
+            }
+            else
+            {
+                playSoundOnNotification = false;
+            }
+            
         }
 
         public void Info(string title, string message)
@@ -143,12 +168,21 @@ namespace Lore.Game.Managers
             }
             notificationManager.UpdateUI();
             notificationManager.Open();
+            
         }
 
         private IEnumerator PrintNextMessage()
         {
             if (debugMode)
                 Debug.Log($"Printing next message!");
+            if (playSoundOnNotification)
+            {
+                if (soundInterval == SoundInterval.EVERY)
+                    audioSource.PlayOneShot(notificationSound);
+                else if (soundInterval == SoundInterval.FIRST)
+                    if (!isRunning)
+                        audioSource.PlayOneShot(notificationSound);
+            }
             isRunning = true;
             Notification msg = messages.Dequeue();
             ShowMessage(msg);

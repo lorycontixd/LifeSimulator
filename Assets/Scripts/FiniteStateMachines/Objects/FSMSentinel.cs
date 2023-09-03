@@ -86,10 +86,10 @@ public class FSMSentinel : MonoBehaviour
     }
     public void StartLightDimming()
     {
-        dimmingStart = Time.realtimeSinceStartup;
+        dimmingStart = TimeManager.Instance.TimeSinceStart;
     }
     public void Dimmer() {
-        float newVal = lightMaxIntensity - Mathf.Clamp((Time.realtimeSinceStartup - dimmingStart) / lightDimmingDuration, 0f, lightMaxIntensity);
+        float newVal = lightMaxIntensity - Mathf.Clamp((TimeManager.Instance.TimeSinceStart - dimmingStart) / lightDimmingDuration, 0f, lightMaxIntensity);
         Debug.Log($"Dimming light ==> New val: {newVal}", this);
         sentinelLight.intensity = newVal;
         

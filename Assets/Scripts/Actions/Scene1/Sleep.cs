@@ -9,8 +9,10 @@ public class Sleep : GAction
 
     public override bool PostPerform()
     {
-        this.beliefs.ModifyState("Hunger", (float)this.beliefs.states["Hunger"] + HungerCost);
-        this.beliefs.ModifyState("Fatigue", 0f);
+        NewPlayerStats stats = GetComponentInParent<NewPlayerStats>();
+        stats.TotalRest();
+        stats.SetHunger((float)this.beliefs.states["Hunger"] + HungerCost);
+        beliefs.ModifyState("LastAction", actionName);
         return true;
     }
 
@@ -21,7 +23,7 @@ public class Sleep : GAction
 
     public override bool IsAchievable()
     {
-        return TimeManager.Instance.CurrentDayPart == DayPart.NIGHT;
+        return TimeManager.Instance.CurrentDayPart == DayPart.NIGHT && base.IsAchievable();
     }
 
 }

@@ -17,13 +17,14 @@ namespace Lore.Game.Characters
     public class Citizen : Character
     {
         #region Enums
-        private enum CitizenState
+        public enum CitizenState
         {
             WANDER,
             TALK,
-            REST
+            REST,
+            WORK
         }
-        private enum WanderMode
+        public enum WanderMode
         {
             STEERING,
             WAYPOINTS,
@@ -35,7 +36,7 @@ namespace Lore.Game.Characters
         [Header("Settings")]
         [SerializeField] private Personality personality;
         [SerializeField] private float playerScanRange;
-        [SerializeField] private WanderMode wanderMode;
+        public WanderMode wanderMode;
         [SerializeField] private float probabilityOfTalking;
         [SerializeField] private float crossRoadSpeedReduction = 3f;
         [SerializeField] private float fsmUpdateRateSeconds = 0.8f;
@@ -53,13 +54,14 @@ namespace Lore.Game.Characters
         // Privates
         private NavMeshAgent agent;
         private Bot bot;
+        private Friendship friendship;
         private Buildings.Building citizenHouse;
         private Buildings.Building citizenWork;
         private FSM fsm;
         private GamePlayer player;
         private float defaultAgentSpeed;
         private bool isPlayerNearby = false;
-        private bool isPlayerScanActive = true;
+        private bool isPlayerScanActive = false;
         private bool isPlayersFriend;
         private bool isTalkingToPlayer;
         private float talkingDurationTimestamp;
@@ -68,12 +70,17 @@ namespace Lore.Game.Characters
         private WaypointWandering waypointWandering;
         private CitizenState state = CitizenState.WANDER;
         private Buildings.Building targetBuilding = null; // For building wandering
+        private Buildings.Building lastBuilding = null; // Last building visited for building wandering
         private int TargetBuildingDebugIndex = 0;
 
 
         private IEnumerator Start()
         {
             bot = GetComponent<Bot>();
+            if (friendship == null)
+            {
+                friendship = GetComponent<Friendship>();
+            }
             waypointWandering = GetComponent<WaypointWandering>();
             agent = GetComponent<NavMeshAgent>();
             defaultAgentSpeed = agent.speed;
@@ -84,11 +91,15 @@ namespace Lore.Game.Characters
             citizenWork = BuildingManager.Instance.GetRandomBuildingByType(BuildingData.BuildingType.COMPANY);
             player = FindFirstObjectByType<GamePlayer>();
             SetupFSM();
+
+            PopulationManager.Instance.AddCitizen(this);
+            SetHouse(BuildingManager.Instance.GetRandomBuildingByType(BuildingData.BuildingType.HOUSE));
+            SetWork(BuildingManager.Instance.GetRandomBuildingByType(BuildingData.BuildingType.COMPANY));
         }
 
         private void OnDayPartChange(DayPart oldPart, DayPart newPart)
         {
-            isTired = (newPart == DayPart.EVENING || newPart == DayPart.NIGHT);
+            //isTired = (newPart == DayPart.EVENING || newPart == DayPart.NIGHT);
         }
 
         private void Update()
@@ -131,6 +142,25 @@ namespace Lore.Game.Characters
             StartCoroutine(Run());
         }
 
+        public void SetHouse(Buildings.Building house)
+        {
+            if (house.data.Type != BuildingData.BuildingType.HOUSE)
+            {
+                Debug.LogError($"[Citizen] Tried to set house, but building is not of type HOUSE");
+                return;
+            }
+            this.citizenHouse = house;
+        }
+        public void SetWork(Buildings.Building work)
+        {
+            if (work.data.Type != BuildingData.BuildingType.COMPANY)
+            {
+                Debug.LogError($"[Citizen] Tried to set work, but building is not of type COMPANY");
+                return;
+            }
+            this.citizenWork = work;
+        }
+
         private void ScanPlayer()
         {
             if (player == null)
@@ -139,11 +169,32 @@ namespace Lore.Game.Characters
                 return;
             }
             Collider[] colliders = Physics.OverlapSphere(transform.position, playerScanRange);
-            Debug.Log($"Scanplayer ==>has  player: {player != null}");
             isPlayerNearby = Vector3.Distance(player.transform.position, transform.position) < playerScanRange;
         }
 
-        
+        public void Interact(GamePlayer player, float duration)
+        {
+            StartCoroutine(InteractCo(player, duration));
+        }
+        private IEnumerator InteractCo(GamePlayer player, float duration)
+        {
+            this.agent.isStopped = true;
+            LookAtPlayer(player);
+            yield return new WaitForSeconds(duration);
+            this.agent.isStopped = false;
+            this.friendship.Interact();
+        }
+        public void LookAtPlayer(GamePlayer player)
+        {
+            Debug.Log($"Citizen looking at player!!");
+            if (player == null)
+            {
+                player = FindFirstObjectByType<GamePlayer>();
+            }
+            this.transform.LookAt(player.transform);
+        }
+
+
 
         #region Conditions
         public bool CanTalk()
@@ -199,6 +250,8 @@ namespace Lore.Game.Characters
         }
         public void GoHome()
         {
+            Debug.Log($"GOing home targetCitizen");
+            targetBuilding = null;
             bot.SetBotAction(Bot.BotAction.SEEK, citizenHouse.gameObject);
             state = CitizenState.REST;
             if (wanderMode == WanderMode.WAYPOINTS)
@@ -251,7 +304,10 @@ namespace Lore.Game.Characters
         }
         private IEnumerator ArriveAtBuilding(float duration = 4f, float randomRange = 0f)
         {
+            if (DebugText)
+                Debug.Log($"[Citizen->BuildingWander] Arrived at building {targetBuilding.data.Name}");
             IsActive = false;
+            lastBuilding = targetBuilding;
             targetBuilding = null;
             if (randomRange < 0f || randomRange > duration)
             {
@@ -267,13 +323,26 @@ namespace Lore.Game.Characters
             if (DebugBuildings)
             {
                 TargetBuildingDebugIndex = (TargetBuildingDebugIndex + 1) % buildings.Count;
+                SetDebugDestination();
+            }
+            else
+            {
+                SetRandomDestination();
             }
             IsActive = true;
         }
 
         private void SetRandomDestination()
         {
-            Buildings.Building building = BuildingManager.Instance.GetRandomBuilding();
+            Buildings.Building building = null;
+            if ( lastBuilding == null)
+            {
+                building = BuildingManager.Instance.GetRandomBuilding();
+            }
+            else
+            {
+                building = BuildingManager.Instance.GetRandomBuildingExcept(new Buildings.Building[] { lastBuilding });
+            }
             targetBuilding = building;
             agent.SetDestination(building.transform.position);
         }
@@ -285,6 +354,8 @@ namespace Lore.Game.Characters
         }
         private void SetDestination(Vector3 destination)
         {
+            if (DebugText)
+                Debug.Log($"[Citizen->BuildingWander] Setting destination {destination}");
             agent.SetDestination(destination);
         }
     }

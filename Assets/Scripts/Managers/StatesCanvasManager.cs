@@ -1,6 +1,7 @@
 using DG.Tweening;
 using GOAP;
 using Lore.Game.Characters;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -10,6 +11,7 @@ using UnityEngine.UI;
 
 public class StatesCanvasManager : MonoBehaviour
 {
+    [SerializeField] private GameObject parentObject;
     [SerializeField] private GameObject buttonGroup = null;
     [SerializeField] private Button buttonGroupCloseButton;
     [SerializeField] private Button buttonGroupOpenButton;
@@ -21,6 +23,7 @@ public class StatesCanvasManager : MonoBehaviour
 
     [Header("Components")]
     [SerializeField] private TextMeshProUGUI currentActionText = null;
+    [SerializeField] private TextMeshProUGUI planText = null;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject titleTextPrefab = null;
@@ -46,7 +49,7 @@ public class StatesCanvasManager : MonoBehaviour
     {
         //TimeManager2.Instance.onNewDay += OnNewDay;
         //TimeManager2.Instance.onDayPartChange += OnDayPartChange;
-
+        parentObject.SetActive(true);
         timeInfoPanel.SetActive(openTimePanelOnStart);
         statesPanel.SetActive(openStatesPanelOnStart);
         debugPanel.gameObject.SetActive(openDebugPanelOnStart);
@@ -57,11 +60,18 @@ public class StatesCanvasManager : MonoBehaviour
         IsButtonGroupOpen = true;
         buttonGroupOpenButton.gameObject.SetActive(false);
         buttonGroupCloseButton.gameObject.SetActive(true);
+        planText.text = "Plan: Not started yet";
 
         player = GameObject.FindFirstObjectByType<GamePlayer>();
-
+        player.onPlanFound += OnPlanFound;
         DOTween.Init();
     }
+
+    private void OnPlanFound(string obj)
+    {
+        planText.text = $"Plan: {obj}";
+    }
+
     private void Update()
     {
         if (IsStatesPanelOpen)
@@ -209,7 +219,6 @@ public class StatesCanvasManager : MonoBehaviour
     // ##### States
     public void StatesClear()
     {
-        Debug.Log($"Clearing {statesPanel.transform.childCount} text objects", this);
         for (int i = 0; i < statesPanel.transform.childCount; i++)
         {
             Destroy(statesPanel.transform.GetChild(i).gameObject);
@@ -218,7 +227,7 @@ public class StatesCanvasManager : MonoBehaviour
 
     public void SpawnStates()
     {
-        Player player = GameObject.FindFirstObjectByType<Player>();
+        GamePlayer player = GameObject.FindFirstObjectByType<GamePlayer>();
         if (player == null)
         {
             return;

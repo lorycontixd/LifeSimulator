@@ -30,7 +30,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4111151581284420417
 MonoBehaviour:
@@ -51,22 +51,22 @@ MonoBehaviour:
   statesPanel: {fileID: 0}
   debugPanel: {fileID: 0}
   currentActionText: {fileID: 0}
-  titleTextPrefab: {fileID: 0}
-  stateTextPrefab: {fileID: 0}
-  daySliderPrefab: {fileID: 0}
+  titleTextPrefab: {fileID: 9041935894232292115, guid: 69423beb6d65fc84c92af92390113f2c, type: 3}
+  stateTextPrefab: {fileID: 5969150460709959980, guid: ec6504156be38e149a3948a649647156, type: 3}
+  daySliderPrefab: {fileID: 8748075176219595045, guid: f5b947bcb439c2c4e9270247dee254e1, type: 3}
   daySliderGradient:
     serializedVersion: 2
-    key0: {r: 1, g: 1, b: 1, a: 1}
-    key1: {r: 1, g: 1, b: 1, a: 1}
-    key2: {r: 0, g: 0, b: 0, a: 0}
+    key0: {r: 1, g: 0.8458734, b: 0, a: 1}
+    key1: {r: 1, g: 0, b: 0.0861845, a: 1}
+    key2: {r: 0.30877542, g: 0, b: 1, a: 0}
     key3: {r: 0, g: 0, b: 0, a: 0}
     key4: {r: 0, g: 0, b: 0, a: 0}
     key5: {r: 0, g: 0, b: 0, a: 0}
     key6: {r: 0, g: 0, b: 0, a: 0}
     key7: {r: 0, g: 0, b: 0, a: 0}
     ctime0: 0
-    ctime1: 65535
-    ctime2: 0
+    ctime1: 34502
+    ctime2: 65535
     ctime3: 0
     ctime4: 0
     ctime5: 0
@@ -81,11 +81,12 @@ MonoBehaviour:
     atime6: 0
     atime7: 0
     m_Mode: 0
-    m_NumColorKeys: 2
+    m_ColorSpace: -1
+    m_NumColorKeys: 3
     m_NumAlphaKeys: 2
   debugMode: 0
   openStatesPanelOnStart: 0
   openTimePanelOnStart: 0
   openDebugPanelOnStart: 0
-  buttonGroupCloseTranslation: 60
-  buttonGroupCloseDuration: 2
+  buttonGroupCloseTranslation: 80
+  buttonGroupCloseDuration: 1.8

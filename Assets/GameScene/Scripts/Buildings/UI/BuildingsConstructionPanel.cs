@@ -1,6 +1,7 @@
 using Lore.Game.Buildings;
 using Lore.Game.Characters;
 using Lore.Game.Managers;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,13 +12,15 @@ namespace Lore.Game.UI
     {
         [SerializeField] private GameObject buildingConstructionPrefab;
         [SerializeField] private Transform buildingDataHolder = null;
+
+        public Action onPanelClose;
+
         private List<BuildingConstructionItem> spawnedItems = new List<BuildingConstructionItem>();
 
 
         private void Start()
         {
         }
-
 
         public void Open()
         {
@@ -28,6 +31,7 @@ namespace Lore.Game.UI
         public void Close()
         {
             gameObject.SetActive(false);
+            onPanelClose?.Invoke(); 
         }
 
         public void SpawnItems() {
@@ -41,9 +45,14 @@ namespace Lore.Game.UI
                 GameObject clone = Instantiate(buildingConstructionPrefab, buildingDataHolder);
                 BuildingConstructionItem item = clone.GetComponent<BuildingConstructionItem>();
                 item.SetBuilding(data);
-                item.onBuy.AddListener(OnItemBought);
+                item.onBuySuccess.AddListener(OnItemBought);
+                item.onBuyFail.AddListener(OnItemBuyFail);
+                spawnedItems.Add(item);
             }
         }
+
+        
+
         private void ClearItems()
         {
             spawnedItems.Clear();
@@ -55,12 +64,18 @@ namespace Lore.Game.UI
 
         public void OnItemBought(BuildingConstructionItem item)
         {
-            
-            BuildingData.BuildingType bType = (BuildingData.BuildingType)item.GetData().Type;
-            BuildingData data = (BuildingData)item.GetData();
+            BuildingData.BuildingType bType = item.GetData().Type;
+            BuildingData data = item.GetData();
             Close();
             BuildingManager.Instance.SelectBuildingForConstruction(data);
-            Debug.Log($"Bought {item.GetData().Name}");
+        }
+        private void OnItemBuyFail(BuildingConstructionItem item, MoneyManager.PurchaseFailedReason reason)
+        {
+            if (NotificationManager.Instance != null)
+            {
+                NotificationManager.Instance.Error("Unable to purchase", $"You do not have enough money to buy a {item.GetData().Name}");
+                return;
+            }
         }
 
         public void ButtonClose()
@@ -68,5 +83,6 @@ namespace Lore.Game.UI
             Close();
             BuildingManager.Instance.ExitConstructionMode();
         }
+
     }
 }

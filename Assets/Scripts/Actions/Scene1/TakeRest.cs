@@ -1,4 +1,5 @@
 using GOAP;
+using Lore.Game.Characters;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,15 +10,26 @@ public class TakeRest : GAction
     [SerializeField] private float HungerCost = 1.5f;
     [SerializeField] private float FatigueValue = 2f;
 
+
     public override bool PostPerform()
     {
-        this.beliefs.ModifyState("Hunger", (float)this.beliefs.states["Hunger"] + HungerCost);
-        this.beliefs.ModifyState("Fatigue", (float)this.beliefs.states["Fatigue"] - FatigueValue);
+        NewPlayerStats stats = GetComponentInParent<GamePlayer>().GetComponent<NewPlayerStats>();
+        stats.PartialRest(FatigueValue, HungerCost);
+        beliefs.ModifyState("LastAction", actionName);
         return true;
     }
 
     public override bool PrePerform()
     {
         return true;
+    }
+
+    public override bool IsAchievableGiven(Dictionary<string, object> conditions)
+    {
+        if (!conditions.ContainsKey("Fatigue")) { return false; }
+        if (!conditions.ContainsKey("IsHome")) { return false; }
+        if ((string)conditions["LastAction"] == actionName) { return false; }
+        //return (bool)conditions["IsHome"];
+        return base.IsAchievableGiven(conditions);
     }
 }

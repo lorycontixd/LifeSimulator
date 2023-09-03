@@ -9,6 +9,7 @@ public class GetDog : GAction
     public override bool PostPerform()
     {
         beliefs.AddState("DogFollowing", true);
+        beliefs.ModifyState("LastAction", actionName);
         return true;
     }
 
@@ -23,5 +24,11 @@ public class GetDog : GAction
     public override bool IsAchievable()
     {
         return FindFirstObjectByType<Dog>() != null;
+    }
+
+    public override bool IsAchievableGiven(Dictionary<string, object> conditions)
+    {
+        if ((string)conditions["LastAction"] == actionName) { return false; }
+        return base.IsAchievableGiven(conditions);
     }
 }

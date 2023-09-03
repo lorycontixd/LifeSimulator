@@ -8,8 +8,14 @@ public class Eat : GAction
 {
     public override bool PostPerform()
     {
-        this.GetComponent<NewPlayerStats>().Eat();
-        return true;
+        NewPlayerStats stats = this.GetComponentInParent<NewPlayerStats>();
+        if (stats != null)
+        {
+            stats.TotalEat();
+            beliefs.ModifyState("LastAction", actionName);
+            return true;
+        }
+        return false;
     }
 
     public override bool PrePerform()

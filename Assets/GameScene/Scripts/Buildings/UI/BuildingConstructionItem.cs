@@ -1,4 +1,5 @@
 using Lore.Game.Buildings;
+using Lore.Game.Managers;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -17,7 +18,8 @@ namespace Lore.Game.UI
         private BuildingData data;
         private Button button = null;
 
-        public UnityEvent<BuildingConstructionItem> onBuy;
+        public UnityEvent<BuildingConstructionItem> onBuySuccess;
+        public UnityEvent<BuildingConstructionItem, MoneyManager.PurchaseFailedReason> onBuyFail;
 
 
         private void Start()
@@ -43,12 +45,15 @@ namespace Lore.Game.UI
         }
         public void Buy()
         {
-            onBuy?.Invoke(this);
-        }
-
-        public bool CanBuy(float currentMoney)
-        {
-            return currentMoney >= data.Cost;
+            if (MoneyManager.Instance == null) { onBuyFail?.Invoke(this, MoneyManager.PurchaseFailedReason.MONEYMANAGER_MISSING); }
+            if (MoneyManager.Instance.CanAfford(data.Cost))
+            {
+                onBuySuccess?.Invoke(this);
+            }
+            else
+            {
+                onBuyFail?.Invoke(this, MoneyManager.PurchaseFailedReason.NO_MONEY);
+            }
         }
 
         public BuildingData GetData()

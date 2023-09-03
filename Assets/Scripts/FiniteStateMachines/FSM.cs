@@ -5,6 +5,8 @@ using UnityEngine;
 public class FSM
 {
     private FSMState current;
+    private List<FSMState> states = new List<FSMState>();
+    private List<FSMTransition> transitions = new List<FSMTransition>();
 
     public FSM(FSMState state) {
         this.current = state;
@@ -34,6 +36,18 @@ public class FSM
         else
         {
             current.Stay(); // (5)
+        }
+    }
+
+    public void RegisterState(FSMState state)
+    {
+        states.Add(state);
+    }
+    public void RegisterStates(FSMState[] s)
+    {
+        foreach (FSMState state in s)
+        {
+            states.Add(state);
         }
     }
 }

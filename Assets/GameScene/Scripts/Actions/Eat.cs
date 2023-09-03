@@ -9,6 +9,7 @@ namespace Lore.Game.Actions
     {
         public override bool PostPerform()
         {
+            beliefs.ModifyState("LastAction", actionName);
             return true;
         }
 

@@ -25,6 +25,7 @@ namespace Lore.Game.Buildings
         public BuildingData data;
         public BuildingState state = BuildingState.NONE;
         [SerializeField] private GameObject surface = null;
+        [SerializeField] private bool isWalkableInside = true;
 
         [Header("UI")]
         [SerializeField] private Canvas buildingLabelCanvas = null;
@@ -60,8 +61,6 @@ namespace Lore.Game.Buildings
             {
                 BuildingManager.Instance.AddConstructedBuilding(this);
             }
-            
-            
         }
         private void Update()
         {
@@ -80,8 +79,8 @@ namespace Lore.Game.Buildings
         public void AssignBuilding(BuildingData data)
         {
             this.data = data;
-            NavMeshObstacle obs = GetComponent<NavMeshObstacle>();
-            obs.enabled = data.Type != BuildingData.BuildingType.NONE;
+            //NavMeshObstacle obs = GetComponent<NavMeshObstacle>();
+            //obs.enabled = data.Type != BuildingData.BuildingType.NONE;
             UpdateUI();
         }
         private void UpdateUI()

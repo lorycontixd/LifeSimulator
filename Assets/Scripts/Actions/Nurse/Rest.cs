@@ -10,7 +10,7 @@ public class Rest : GAction
         Nurse nurse = this.GetComponent<Nurse>();
         if (nurse == null)
         {
-            Debug.LogError($"Expected Nurse object for Rest action, but was not found", this);
+            Debug.LogError($"Expected Nurse object for TotalRest action, but was not found", this);
         }
         nurse.Rest();
         return true;

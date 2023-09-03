@@ -11,6 +11,17 @@ TagManager:
   - PlayerHouse
   - Building
   - Crossroad
+  - Home
+  - Door
+  - WaitingArea
+  - Lounge
+  - Reception
+  - Cubicle
+  - Policeman
+  - BoundaryCollider
+  - MapCenter
+  - PongPlayer
+  - PongBall
   layers:
   - Default
   - TransparentFX
@@ -20,8 +31,8 @@ TagManager:
   - UI
   - Ground
   - Buildable
-  - 
-  - 
+  - BoundaryCollider
+  - Surface
   - 
   - 
   - 

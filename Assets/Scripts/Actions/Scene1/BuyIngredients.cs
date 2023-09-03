@@ -8,6 +8,7 @@ public class BuyIngredients : GAction
 {
     public override bool PostPerform()
     {
+        beliefs.ModifyState("LastAction", actionName);
         return true;
     }
 

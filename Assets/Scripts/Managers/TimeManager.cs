@@ -6,6 +6,7 @@ using System;
 using UnityEngine.UIElements;
 using Lore.Game.Managers;
 using Lore.Game.Characters;
+using UnityEngine.AI;
 
 public enum DayPart
 {
@@ -35,17 +36,20 @@ public class TimeManager : BaseManager
     #endregion
 
     [SerializeField, Range(1f, 4f)] private int simulationSpeedUpFactor = 1;
-
+    [SerializeField, Tooltip("Agents to be stopped when simulation pauses")] private List<NavMeshAgent> pausableAgents = new List<NavMeshAgent>();
+    public float TimeSinceStart;
 
     [Header("Game Settings")]
     public bool IsActive = true;
-    [SerializeField, Range(0.5f, 6)] private int dayDurationMinutes = 4;
+    [Range(0.5f, 6)] public int DayDurationMinutes = 4;
+    public float DaysInMonth = 30;
 
     public DayPart CurrentDayPart { get; private set; } = DayPart.MORNING;
     public int DaysPassed { get { return _daysPassed; } }
     public float DayPercentage { get { return _partOfDay; } }
     public int CurrentDay { get; private set; } = 0;
     public int CurrentMonth { get; private set; } = 0;
+
     private DayPart lastDayPart = DayPart.MORNING;
     private int lastDaysPassed;
     private float morningPerc = 0.3f;
@@ -65,6 +69,9 @@ public class TimeManager : BaseManager
 
     public override void Start()
     {
+        Lore.Game.Managers.GameManager.Instance.OnGameStateChanged += OnGameStateChange;
+
+        IsActive = false;
         Time.timeScale = simulationSpeedUpFactor;
         GWorld.Instance.GetWorld().ModifyState("DayPart", CurrentDayPart);
         GWorld.Instance.GetWorld().AddState($"Is{CurrentDayPart.ToString().ToLower().Capitalize()}", true);
@@ -75,18 +82,33 @@ public class TimeManager : BaseManager
         }
         dayPartDurations = new Dictionary<DayPart, float>
         {
-            { DayPart.MORNING, morningPerc * dayDurationMinutes },
-            { DayPart.AFTERNOON, afternoonPerc * dayDurationMinutes },
-            { DayPart.EVENING, eveningPerc * dayDurationMinutes },
-            { DayPart.NIGHT, nightPerc * dayDurationMinutes }
+            { DayPart.MORNING, morningPerc * DayDurationMinutes },
+            { DayPart.AFTERNOON, afternoonPerc * DayDurationMinutes },
+            { DayPart.EVENING, eveningPerc * DayDurationMinutes },
+            { DayPart.NIGHT, nightPerc * DayDurationMinutes }
         };
+        CurrentDayPart = DayPart.MORNING;
 
         base.Start();
+    }
+
+    private void OnGameStateChange(Lore.Game.Managers.GameManager.GameState state1, Lore.Game.Managers.GameManager.GameState state2)
+    {
+        if (state2 == Lore.Game.Managers.GameManager.GameState.PLAYING)
+        {
+            IsActive = true;
+        }
+    }
+
+    public void Setup()
+    {
+        IsActive = true;
     }
 
     void Update()
     {
         if (!IsActive) return;
+        TimeSinceStart += Time.deltaTime;
         CalculateDayPart();
     }
 
@@ -97,9 +119,8 @@ public class TimeManager : BaseManager
 
     private void CalculateDayPart()
     {
-        float timeSinceStart = Time.realtimeSinceStartup;
-        _daysPassed = (int)(timeSinceStart / 60f) / dayDurationMinutes;
-        _partOfDay = timeSinceStart / (dayDurationMinutes * 60f) % 1;
+        _daysPassed = (int)(TimeSinceStart / 60f) / DayDurationMinutes;
+        _partOfDay = TimeSinceStart / (DayDurationMinutes * 60f) % 1;
         if (_partOfDay <= morningPerc)
         {
             CurrentDayPart = DayPart.MORNING;
@@ -154,6 +175,10 @@ public class TimeManager : BaseManager
         {
             player.PauseAgent();
         }
+        foreach(var agent in pausableAgents)
+        {
+            agent.isStopped = true;
+        }
         IsActive = false;
     }
     public void Resume()
@@ -163,6 +188,21 @@ public class TimeManager : BaseManager
         {
             player.ResumeAgent();
         }
+        foreach (var agent in pausableAgents)
+        {
+            agent.isStopped = false;
+        }
         IsActive = true;
+    }
+    public void RegisterPausableAgent(NavMeshAgent agent)
+    {
+        pausableAgents.Add(agent);
+    }
+    public void RemovePausableAgent(NavMeshAgent agent)
+    {
+        if (pausableAgents.Contains(agent))
+        {
+            pausableAgents.Remove(agent);
+        }
     }
 }

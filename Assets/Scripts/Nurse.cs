@@ -17,7 +17,7 @@ public class Nurse : GAgent
         Goal s1 = new Goal("TreatPatient", 1, false);
         goals.Add(s1, 4);
 
-        Goal s2 = new Goal("Rest", 1, false);
+        Goal s2 = new Goal("TotalRest", 1, false);
         goals.Add(s2, 5);
     }
 

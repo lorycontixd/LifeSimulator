@@ -1,3 +1,4 @@
+using Lore.Game.Characters;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -14,11 +15,11 @@ public class DebugPanel : MonoBehaviour
     [SerializeField] private TextMeshProUGUI distanceToHouseText;
     [SerializeField] private float _hudRefreshRate = 1f;
     private float _timer;
-    private Player player;
+    private GamePlayer player;
 
     private void Start()
     {
-        player = GameObject.FindFirstObjectByType<Player>();
+        player = GameObject.FindFirstObjectByType<GamePlayer>();
     }
     private void Update()
     {
@@ -32,6 +33,10 @@ public class DebugPanel : MonoBehaviour
         DistanceTraveled();
         DistanceToPlayerHouseText();
         CurrentActionText();
+    }
+    public void Close()
+    {
+        gameObject.SetActive(false);
     }
 
     private void FPSText()
@@ -87,7 +92,7 @@ public class DebugPanel : MonoBehaviour
         if (currentActionText != null)
         {
             if (player != null)
-            {
+            {/*
                 if (player.currentAction != null)
                 {
                     currentActionText.text = $"Current Action: {player.currentAction.actionName}";
@@ -95,8 +100,18 @@ public class DebugPanel : MonoBehaviour
                 else
                 {
                     currentActionText.text = "No action";
-                }
+                }*/
+                currentActionText.text = $"Current Goal: {player.CurrentGoalStr}";
             }
         }
+    }
+
+      
+    public void ButtonDie()
+    {
+        GamePlayer player = FindFirstObjectByType<GamePlayer>();
+        NewPlayerStats stats = player.GetComponent<NewPlayerStats>();
+        Close();
+        stats.Die(NewPlayerStats.DamageReason.USERINPUT);
     }
 }

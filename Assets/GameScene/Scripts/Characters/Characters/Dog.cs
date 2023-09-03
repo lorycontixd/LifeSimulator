@@ -1,4 +1,5 @@
 using GOAP;
+using Lore.Game.Managers;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -66,7 +67,7 @@ namespace Lore.Game.Characters
         private bool _playerStartedWalk = false;
         private bool _playerCompletedWalk = false;
         private bool _hasFood = false;
-        private bool _isReturningHome;
+        public bool IsReturningHome { get; private set; }
 
 
         private void Start()
@@ -79,25 +80,19 @@ namespace Lore.Game.Characters
             TimeManager.Instance.onDayPartChange += OnDayPartChange;
             TimeManager.Instance.onNewDay += OnNewDay;
 
+
+            GoToRest();
             SetupFSM();
+
+            StartCoroutine(RunFSM());
         }
         private void Update()
         {
-            if ( state == DogState.WALKING && _isReturningHome)
-            {
-                if (Vector3.Distance(agent.transform.position, restPosition.position) < 1.5f)
-                {
-                    // Arrived rest place after walk
-                    animator.SetFloat("Speed", 0f);
-                    animator.SetInteger("Idle", 0);
-                    this.bot.SetBotAction(Bot.BotAction.NONE);
-                }
-            }
             if (state == DogState.DEMANDINGWALK)
             {
                 demandTimestamp += Time.deltaTime;
             }
-            if (Time.realtimeSinceStartup - lastEat > hungryAfterSeconds)
+            if (TimeManager.Instance.TimeSinceStart - lastEat > hungryAfterSeconds && !IsHungry)
             {
                 IsHungry = true;
             }
@@ -110,7 +105,10 @@ namespace Lore.Game.Characters
             FSMState eat = new FSMState();
             FSMState dead = new FSMState();
 
+            idle.enterActions.Add(OnIdleEnter);
+            idle.exitActions.Add(OnIdleExit);
             demandWalk.enterActions.Add(OnDemandWalk);
+            demandWalk.exitActions.Add(OnDemandExit);
             walk.enterActions.Add(OnWalkStarted);
             walk.exitActions.Add(OnWalkCompleted);
             eat.enterActions.Add(OnEatStart);
@@ -128,11 +126,11 @@ namespace Lore.Game.Characters
             idle.AddTransition(idleToEat, eat);
             eat.AddTransition(eatToIdle, idle);
 
-            GoToRest();
             fsm = new FSM(idle);
-            StartCoroutine(RunFSM());
-            StartCoroutine(TestWantsWalk());
         }
+
+        
+
         private IEnumerator RunFSM()
         {
             while (IsActive)
@@ -154,30 +152,45 @@ namespace Lore.Game.Characters
 
         private void OnDayPartChange(DayPart part1, DayPart part2)
         {
-            /*if (timesWalkedToday < maxWalksPerDay && state != DogState.DEMANDINGWALK)
+            if (timesWalkedToday < maxWalksPerDay && state == DogState.IDLE && !GWorld.Instance.GetWorld().HasState("DogWantsWalk"))
             {
-                if (UnityEngine.Random.Range(0f, 1f) < 0.7f)
+                float prob = CalculateWalkDemandProbability();
+                if (UnityEngine.Random.Range(0f, 1f) < prob)
                 {
                     WantsWalk();
                 }
-            }*/
-            if (Time.realtimeSinceStartup - lastEat > deathNoEatSeconds)
+            }
+            if (TimeManager.Instance.TimeSinceStart - lastEat > deathNoEatSeconds)
             {
                 onDeath?.Invoke();
             }
         }
 
-        public void WantsWalk()
+        private float CalculateWalkDemandProbability()
         {
-            Debug.Log($"Dog wants to walk!!");
+            if (timesWalkedToday == 0)
+            {
+                return 0.9f;
+            }else if(timesWalkedToday == 1)
+            {
+                return 0.5f;
+            }
+            else
+            {
+                return 0.3f;
+            }
+        }
+
+        public void WantsWalk(bool notify = true)
+        {
             GWorld.Instance.GetWorld().AddState("DogWantsWalk", true);
-            this.player.AddGoal("WalkDog", 1, true);
+            this.player.AddGoal("WalkDog", 2, true);
             _wantsToWalk = true;
+            if (notify)
+                NotificationManager.Instance.Info("Dog info", "Your dog wants to be taken for a walk!");
         }
         public void StartDogWalk()
         {
-            Debug.Log($"Player started dog walk!");
-            _wantsToWalk = false;
             _playerStartedWalk = true;
             GWorld.Instance.GetWorld().RemoveState("DogWantsWalk");
         }
@@ -195,7 +208,7 @@ namespace Lore.Game.Characters
         }
         public void ReturningHome()
         {
-            _isReturningHome = true;
+            IsReturningHome = true;
         }
 
         #region Conditions
@@ -222,21 +235,39 @@ namespace Lore.Game.Characters
         #endregion
 
         #region Actions
+
+        public void OnIdleEnter()
+        {
+            _speed = -1f;
+            animator.SetFloat("Speed", _speed);
+            animator.SetInteger("Idle", 0);
+        }
+        public void OnIdleExit()
+        {
+        }
         private void OnDemandWalk()
         {
             state = DogState.DEMANDINGWALK;
+            _speed = -1f;
+            animator.SetFloat("Speed", _speed);
+            animator.SetInteger("Idle", 0);
+        }
+        private void OnDemandExit()
+        {
         }
         private void OnWalkStarted()
         {
             state = DogState.WALKING;
             _playerStartedWalk = false;
+            _wantsToWalk = false;
+            bot.SetBotAction(Bot.BotAction.SEEK, player.gameObject);
             _speed = _defaultSpeed;
             animator.SetFloat("Speed", _speed);
-            bot.SetBotAction(Bot.BotAction.SEEK, player.gameObject);
         }
         private void OnWalkCompleted()
         {
             _playerCompletedWalk = false;
+            state = DogState.IDLE;
             GoToRest();
         }
         private void OnEatStart()
@@ -253,10 +284,16 @@ namespace Lore.Game.Characters
         }
         private void OnEatComplete()
         {
-            lastEat = Time.realtimeSinceStartup;
+            lastEat = TimeManager.Instance.TimeSinceStart;
             state = DogState.IDLE;
         }
         #endregion
+
+
+        public void Reset()
+        {
+            OnWalkCompleted();
+        }
 
     }
 }

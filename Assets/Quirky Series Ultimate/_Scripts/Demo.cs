@@ -12,7 +12,7 @@ public class Demo : MonoBehaviour {
 												"Bounce",
 												"Clicked",
 												"Death",
-												"Eat",
+												"TotalEat",
 												"Fear",
 												"Fly",
 												"Hit",

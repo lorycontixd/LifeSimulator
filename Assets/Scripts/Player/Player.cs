@@ -47,7 +47,7 @@ public class Player : GAgent
         npcTalkTimestamp = 0f;
 
         onActionComplete += OnActionComplete;
-        onDestinationSet += OnDestinationSet;
+        //onDestinationSet += OnDestinationSet;
         TimeManager.Instance.onNewMonth += OnNewMonth;
         TimeManager.Instance.onNewDay += OnNewDay;
 
@@ -84,7 +84,7 @@ public class Player : GAgent
     }
 
     // Event listeners
-    public void OnActionComplete(GAction action)
+    public void OnActionComplete(GAction action, float actualDuration)
     {
         if (currentAction == null)
         {
@@ -102,7 +102,7 @@ public class Player : GAgent
         {
             return;
         }
-        Money += MoneyManager.Instance.MonthlySalary;
+        Money += MoneyManager.Instance.monthlySalary;
     }
     private void OnNewDay(int CurrentDay)
     {
@@ -123,7 +123,7 @@ public class Player : GAgent
     {
         goals.Clear();
 
-        Goal s1 = new Goal("Eat", 1, false);
+        Goal s1 = new Goal("TotalEat", 1, false);
         goals.Add(s1, (int)stats.Hunger);
 
         Goal s2 = new Goal("DoSports", 1, false);
@@ -132,7 +132,7 @@ public class Player : GAgent
         Goal s3 = new Goal("GetTreated", 1, false);
         goals.Add(s3, 1);
 
-        Goal s4 = new Goal("Rest", 1, false);
+        Goal s4 = new Goal("TotalRest", 1, false);
         goals.Add(s4, (int)stats.Fatigue);
 
         Goal s5 = new Goal("Sleep", 1, false);

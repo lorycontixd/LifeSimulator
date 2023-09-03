@@ -20,12 +20,13 @@ public class Talk : GAction
         this.duration = duration;
         this.target = player.gameObject;
         this.player.StartTalk();
-        Debug.Log($"[Talk] Started conversation with {player.talkingToNPC.ID}");
+        beliefs.ModifyState("LastAction", actionName);
         return true;
     }
 
     public override bool IsAchievable()
     {
+        if (!base.IsAchievable()) return false;
         Player player = gameObject.GetComponentInParent<Player>();
         if (player == null)
         {

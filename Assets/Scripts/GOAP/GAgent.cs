@@ -27,7 +27,10 @@ public class GAgent : Character {
     public Dictionary<Goal, int> goals = new Dictionary<Goal, int>();
     public GInventory inventory = new GInventory();
     public WorldStates beliefs = new WorldStates();
-    bool invoked = false;
+    public bool CanSearchPlan { get; set; }
+    public string CurrentGoalStr { get; private set; } = "";
+    public bool IsNavmeshOverriden { get; private set; } = false;
+    public bool invoked { get; private set; } = false;
 
     GPlanner planner;
     Queue<GAction> actionQueue;
@@ -37,14 +40,22 @@ public class GAgent : Character {
     private bool isAgentPaused;
     private float defaultAgentSpeed;
 
-    [SerializeField] private float actionCompletionDistance = 2.2f;
-    public Action<GAction> onActionComplete;
+    public float actionCompletionDistance = 2.2f;
+    [Range(0f,0.9f)] public float DurationModifierPercentageMax = 0.4f;
+    public float DurationModifierPerc { get; protected set; } = 0f;
+    public Action<GAction, float> onActionComplete;
     public Action<Vector3> onDestinationSet;
+    public Action<string> onPlanFound;
+
+    [SerializeField] private bool _planDebugMode;
 
 
     protected virtual void Start() {
-
+        planner = null;
+        CanSearchPlan = true;
         GAction[] acts = this.GetComponentsInChildren<GAction>();
+        acts = acts.Where(a => a.enabled).ToArray();
+        
         if (navmeshAgent == null)
         {
             navmeshAgent = GetComponentInParent<NavMeshAgent>();
@@ -56,59 +67,94 @@ public class GAgent : Character {
         defaultAgentSpeed = navmeshAgent.speed;
     }
 
-    void CompleteAction() {
+    public void ForceActionComplete()
+    {
+        CompleteAction();
+        planner = null;
+        currentGoal = null;
+        CurrentGoalStr = string.Empty;
+    }
 
+    void CompleteAction()
+    {
         currentAction.running = false;
         currentAction.PostPerform();
         invoked = false;
         currentAction = null;
     }
 
-    void LateUpdate() {
-
-        if (currentAction != null && currentAction.running) {
-
+    void LateUpdate()
+    {
+        if (_planDebugMode)
+        Debug.Log($"[GAgent->LU] currentaction: {currentAction}, isnull: {currentAction == null}");
+        if (currentAction != null && _planDebugMode)
+        {
+            Debug.Log($"[GAgent->LU] current action not null ==> isrunning: {currentAction.running}");
+        }
+        if (currentAction != null && currentAction.running ) {
             float distanceToTarget = Vector3.Distance(currentAction.target.transform.position, this.transform.position);
+            //Debug.Log($"[GAgent] Dist to target: {distanceToTarget} / {actionCompletionDistance}");
             if (currentAction.agent.hasPath && distanceToTarget < actionCompletionDistance)//currentAction.agent.remainingDistance < 0.5f)
-                {
+            {
+                if (_planDebugMode) Debug.Log($"Current action not null, reached dest");
                 if (!invoked) {
-
-                    Invoke("CompleteAction", currentAction.duration);
+                    if (_planDebugMode) Debug.Log($"Current action not null, reached dest, not invoked => Calling complete action!");
+                    currentAction.OnArrival();
+                    float actualDuration = 0;
+                    if (currentAction.duration > 0)
+                    {
+                        actualDuration = currentAction.duration *  (1f - DurationModifierPerc);
+                    }
+                    else
+                    {
+                        actualDuration = currentAction.duration;
+                    }
+                    Invoke("CompleteAction", actualDuration);
                     invoked = true;
-                    onActionComplete?.Invoke(currentAction);
+                    onActionComplete?.Invoke(currentAction, actualDuration);
                 }
             }
             return;
         }
 
-        if (planner == null || actionQueue == null) {
-
-            planner = new GPlanner();
+        if ( (planner == null || actionQueue == null) && CanSearchPlan)
+        {
+            if (_planDebugMode) Debug.Log($"No action queue, planning new => p:{planner==null}, aq:{actionQueue==null}");
+            planner = new GPlanner(debugMode: false);
             var sortedGoals = from entry in goals orderby entry.Value descending select entry;
-
             foreach (KeyValuePair<Goal, int> sg in sortedGoals) {
-
                 actionQueue = planner.Plan(actions, sg.Key.sGoals, beliefs);
 
                 if (actionQueue != null) {
 
                     currentGoal = sg.Key;
+                    CurrentGoalStr = sg.Key.sGoals.Last().Key;
+                    string plan = BuildPlanString(actionQueue);
+                    if (_planDebugMode) Debug.Log($"Found plan ==> {plan}");
+                    onPlanFound?.Invoke(plan);
                     break;
                 }
             }
         }
 
-        if (actionQueue != null && actionQueue.Count == 0) {
-
+        if (actionQueue != null && actionQueue.Count == 0)
+        {
+            if (_planDebugMode)
+                Debug.Log($"Action q count == 0: {actionQueue.Count == 0}, isnull: {actionQueue == null}");
+            // FInished all actions for a goal
             if (currentGoal.remove) {
 
                 goals.Remove(currentGoal);
             }
+            CurrentGoalStr = string.Empty;
             planner = null;
         }
 
-        if (actionQueue != null && actionQueue.Count > 0) {
-
+        if (actionQueue != null && actionQueue.Count > 0)
+        {
+            if (_planDebugMode)
+                Debug.Log($"ActionQ not null, action q count > 0 => {actionQueue.Count}");
+            // Finished one action for goal queue, but goal queue is not empty
             currentAction = actionQueue.Dequeue();
 
             if (currentAction.PrePerform()) {
@@ -118,11 +164,11 @@ public class GAgent : Character {
                     currentAction.target = GameObject.FindWithTag(currentAction.targetTag);
                 }
 
-                if (currentAction.target != null) {
-
-                    currentAction.running = true;
+                currentAction.running = true;
+                if (currentAction.target != null && !IsNavmeshOverriden)
+                {
                     currentAction.agent.SetDestination(currentAction.target.transform.position);
-                    onDestinationSet?.Invoke(currentAction.target.transform.position);
+                    //onDestinationSet?.Invoke(currentAction.target.transform.position);
                 }
             } else {
 
@@ -131,11 +177,23 @@ public class GAgent : Character {
         }
     }
 
-    public void PauseAgent()
+    private string BuildPlanString(Queue<GAction> queue)
+    {
+        List<GAction> list = queue.ToList();
+        string result = "";
+        for (int i=0; i<list.Count; i++)
+        {
+            result += list[i].actionName + ", ";
+        }
+        result = result.Remove(result.Length - 2, 2);
+        return result;
+    }
+
+    public virtual void PauseAgent()
     {
         navmeshAgent.isStopped = true;
     }
-    public void ResumeAgent()
+    public virtual void ResumeAgent()
     {
         navmeshAgent.isStopped = false;
     }
@@ -162,5 +220,10 @@ public class GAgent : Character {
     public void ResetNavmeshSpeed()
     {
         navmeshAgent.speed = defaultAgentSpeed;
+    }
+
+    public void OverrideNavmesh(bool _override)
+    {
+        this.IsNavmeshOverriden = _override;
     }
 }

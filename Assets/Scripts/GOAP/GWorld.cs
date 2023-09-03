@@ -6,12 +6,8 @@ using UnityEngine;
 namespace GOAP {
     public sealed class GWorld
     {
-        
-
-
         private static readonly GWorld _instance = new GWorld(); // Private Singleton instance
         private static WorldStates world;
-
 
 
         static GWorld()

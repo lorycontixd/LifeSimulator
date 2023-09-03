@@ -1,12 +1,23 @@
+using Lore.Game.Characters;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Lore.Game.Managers
 {
     public class MoneyManager : BaseManager
     {
+        #region Enums
+        public enum PurchaseFailedReason
+        {
+            NO_MONEY,
+            MONEYMANAGER_MISSING,
+            UNKNOWN
+        }
+        #endregion
+
         #region Singleton
         private static MoneyManager _instance;
         public static MoneyManager Instance { get { return _instance; } }
@@ -25,9 +36,11 @@ namespace Lore.Game.Managers
         #endregion
 
         public float Money { get; private set; }
+        [Range(0.4f,1f)] public float MinSalaryModifierWhenSad = 0.8f;
 
-        [Header("Siomulation Settings")]
-        public float MonthlySalary = 500f;
+        [Header("Simulation Settings")]
+        [SerializeField] private float initialMoney = 50f;
+        public float monthlySalary = 500f;
 
         public Action<float, float> onMoneyChange;
 
@@ -36,13 +49,14 @@ namespace Lore.Game.Managers
 
         public override void Start()
         {
+            Money = initialMoney;
             base.Start();
         }
 
         #region Event Listeners
         public void OnNewDay()
         {
-            GetMoney(MonthlySalary / 30f);
+            //GetMoney(monthlySalary / 30f);
         }
         #endregion
 
@@ -50,7 +64,7 @@ namespace Lore.Game.Managers
         {
             value = Mathf.Abs(value);
             oldMoneyValue = Money;
-            Money -= value;
+            Money += value;
             onMoneyChange?.Invoke(oldMoneyValue, Money);
         }
         public void SpendMoney(float value)
@@ -59,6 +73,15 @@ namespace Lore.Game.Managers
             oldMoneyValue = Money;
             Money -= value;
             onMoneyChange?.Invoke(oldMoneyValue, Money);
+            if (Money <= 30f)
+            {
+                GamePlayer p = FindFirstObjectByType<GamePlayer>();
+                if (!p.beliefs.HasState("NeedsMoney"))
+                {
+                    p.beliefs.AddState("NeedsMoney", true);
+                    p.AddGoal("StealMoney", 5, true);
+                }   
+            }
         }
 
         public bool CanAfford(float cost)
@@ -68,8 +91,15 @@ namespace Lore.Game.Managers
 
         public void GetDailySalary()
         {
-            float dailySalary = MonthlySalary / 30f;
-            GetMoney(dailySalary);
+            float dailySalary = monthlySalary / TimeManager.Instance.DaysInMonth;
+            GamePlayer p = FindFirstObjectByType< GamePlayer>();
+            bool isSad = false;
+            if (p != null)
+            {
+                isSad = p.beliefs.HasState("IsSad");
+            }
+            float sadnessMod = isSad ? MinSalaryModifierWhenSad : 1f;
+            GetMoney(dailySalary * sadnessMod);
         }
     }
 

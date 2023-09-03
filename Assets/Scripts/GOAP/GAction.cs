@@ -67,4 +67,14 @@ public abstract class GAction : MonoBehaviour {
 
     public abstract bool PrePerform();
     public abstract bool PostPerform();
+
+    /// <summary>
+    /// This function is executed on arrival to the destination,
+    /// but before the duration timer.
+    /// </summary>
+    /// <returns>bool: If the arrival function was successful</returns>
+    public virtual bool OnArrival()
+    {
+        return true;
+    }
 }

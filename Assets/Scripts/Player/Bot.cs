@@ -17,6 +17,9 @@ public class Bot : MonoBehaviour {
 
     public GameObject target;
     public GameObject sphere;
+    [SerializeField] private float wanderRadius = 10.0f;
+    [SerializeField] private float wanderDistance = 20.0f;
+    [SerializeField] private float wanderJitter = 1.0f;
     [SerializeField] private BotAction startingAction = BotAction.NONE;  
     [SerializeField] private bool debugMode;
 
@@ -37,7 +40,6 @@ public class Bot : MonoBehaviour {
         }
         if (sphere != null && debugMode)
             jitter = Instantiate(sphere);
-        currentAction = startingAction;
     }
 
     public void SetBotAction(BotAction action, GameObject target = null)
@@ -48,8 +50,6 @@ public class Bot : MonoBehaviour {
 
 
     void Seek(Vector3 location) {
-
-        Debug.Log($"seeking");
         agent.SetDestination(location);
     }
 
@@ -88,12 +88,8 @@ public class Bot : MonoBehaviour {
         Flee(target.transform.position + target.transform.forward * lookAhead);
     }
 
-    void Wander() {
-
-        float wanderRadius = 10.0f;
-        float wanderDistance = 20.0f;
-        float wanderJitter = 1.0f;
-
+    void Wander()
+    {
         wanderTarget += new Vector3(
             Random.Range(-1.0f, 1.0f) * wanderJitter,
             0.0f,
@@ -109,7 +105,7 @@ public class Bot : MonoBehaviour {
             Debug.DrawLine(transform.position, targetWorld, Color.red);
             jitter.transform.position = targetWorld;
         }
-        Seek(targetWorld);
+        Seek(transform.position + targetWorld);
     }
 
     private void ChooseAction()

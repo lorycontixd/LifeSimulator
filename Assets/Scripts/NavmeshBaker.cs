@@ -1,11 +1,28 @@
+using Lore.Game.Managers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.AI.Navigation;
 using UnityEngine;
-using UnityEngine.AI;
 
 public class NavmeshBaker : MonoBehaviour
 {
+    #region Singleton
+    private static NavmeshBaker _instance;
+    public static NavmeshBaker Instance { get { return _instance; } }
+
+    private void Awake()
+    {
+        if (_instance != null && _instance != this)
+        {
+            Destroy(this.gameObject);
+        }
+        else
+        {
+            _instance = this;
+        }
+    }
+    #endregion
 
     public NavMeshSurface[] surfaces;
     public Transform[] objectsToRotate;

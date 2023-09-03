@@ -16,6 +16,7 @@ namespace Lore.Game.Buildings
             HOSPITAL,
             SPORTS_CENTER,
             SUPERMARKET,
+            MINIMARKET,
             BARRACKS,
             RESTAURANT,
             BANK,
@@ -30,7 +31,9 @@ namespace Lore.Game.Buildings
         public BuildingType Type;
         public float ConstructionDuration;
         public float Cost;
+        [Range(0f, 1f)] public float SellPercentage = 0.6f;
         public Sprite Icon;
+        public GameObject buildingPrefab = null;
     }
 
 }

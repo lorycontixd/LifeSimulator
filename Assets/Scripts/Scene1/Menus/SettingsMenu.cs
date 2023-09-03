@@ -5,7 +5,6 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.UI;
-using static UnityEditor.PlayerSettings;
 
 public class SettingsMenu : MonoBehaviour
 {

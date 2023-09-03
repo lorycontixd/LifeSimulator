@@ -12,14 +12,20 @@ public class GoToWaitingRoom : GAction
 
     public override bool PostPerform()
     {
-        GWorld.Instance.GetWorld().ModifyState("PatientWaiting", 1);
+        beliefs.ModifyState("LastAction", actionName);
+        return true;
+    }
+
+    public override bool OnArrival()
+    {
         GAgent characterComponent = GetComponentInParent<GAgent>();
         if (characterComponent == null)
         {
             return false;
         }
+        GWorld.Instance.GetWorld().ModifyState("PatientWaiting", 1);
         HospitalManager.Instance.AddPatient(characterComponent);
-        beliefs.ModifyState("AtHospital", 1);
+        Debug.Log("Adding this patient to hospital queue");
         return true;
     }
 
