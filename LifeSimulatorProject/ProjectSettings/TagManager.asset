@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!78 &1
+TagManager:
+  serializedVersion: 2
+  tags:
+  - Supermarket
+  - Work
+  - Company
+  - PlayerBike
+  - PlayerHouse
+  - Building
+  - Crossroad
+  - Home
+  - Door
+  - WaitingArea
+  - Lounge
+  - Reception
+  - Cubicle
+  - Policeman
+  - BoundaryCollider
+  - MapCenter
+  - PongPlayer
+  - PongBall
+  layers:
+  - Default
+  - TransparentFX
+  - Ignore Raycast
+  - Player
+  - Water
+  - UI
+  - Ground
+  - Buildable
+  - BoundaryCollider
+  - Surface
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  m_SortingLayers:
+  - name: Default
+    uniqueID: 0
+    locked: 0
